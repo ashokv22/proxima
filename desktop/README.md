@@ -1,6 +1,6 @@
-# Local Text Workbench Desktop
+# Proxima Desktop
 
-This directory contains the Tauri 2 migration. The existing Python application remains untouched at the repository root.
+This directory contains Proxima, the Tauri 2 desktop application. The existing Python application remains untouched at the repository root.
 
 ## Prerequisites on Windows
 
@@ -49,4 +49,4 @@ The server contract and safe error codes are documented in [`docs/ai-insights-co
 
 Pretty View is a read-only API activity projection over the sanitized output. It recognizes `REQ START` and `REQ END` records, pairs them only when a reliable request/trace/correlation identifier is present, and uses `REQ END` status and duration values without deriving missing data. Text remains the exact copy source.
 
-Local Text Workbench v0.1 is feature-frozen after this Pretty View implementation. Further work should be limited to defects, security fixes, and packaging maintenance.
+Proxima v0.1 is feature-frozen. Further work should be limited to defects, security fixes, and packaging maintenance.

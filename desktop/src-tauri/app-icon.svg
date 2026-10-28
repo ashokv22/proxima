@@ -1,10 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-  <defs>
-    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#2563eb"/>
-      <stop offset="1" stop-color="#0f172a"/>
-    </linearGradient>
-  </defs>
-  <rect x="64" y="64" width="896" height="896" rx="196" fill="url(#background)"/>
-  <path d="M258 318l112 388 142-250 142 250 112-388" fill="none" stroke="#f8fafc" stroke-width="82" stroke-linecap="round" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Proxima orbit logo">
+  <rect x="64" y="64" width="896" height="896" rx="210" fill="#0B453A" stroke="#26725F" stroke-width="24"/>
+  <g transform="translate(192 192) scale(26.6666667)" fill="none" stroke="#34D399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20.341 6.484A10 10 0 0 1 10.266 21.85"/>
+    <path d="M3.659 17.516A10 10 0 0 1 13.74 2.152"/>
+    <circle cx="12" cy="12" r="3"/>
+    <circle cx="19" cy="5" r="2"/>
+    <circle cx="5" cy="19" r="2"/>
+  </g>
 </svg>

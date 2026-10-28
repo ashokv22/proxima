@@ -360,7 +360,7 @@ fn bounded_evidence(evidence: &str) -> Result<EvidenceSubset, AiError> {
     let mut truncated = omitted > 0;
     for (index, line) in selected.into_iter().enumerate() {
         if index == MAX_EVIDENCE_LINES / 2 && omitted > 0 {
-            let marker = format!("[... {omitted} lines omitted by Local Text Workbench ...]\n");
+            let marker = format!("[... {omitted} lines omitted by Proxima ...]\n");
             if output.len() + marker.len() <= MAX_EVIDENCE_BYTES {
                 output.push_str(&marker);
             }

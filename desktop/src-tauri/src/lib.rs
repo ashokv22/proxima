@@ -105,7 +105,7 @@ pub fn run() {
             Ok(())
         })
         .run(tauri::generate_context!())
-        .expect("error while running Local Text Workbench");
+        .expect("error while running Proxima");
 }
 
 #[cfg(test)]

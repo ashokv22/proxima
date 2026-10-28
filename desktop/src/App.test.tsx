@@ -20,7 +20,7 @@ vi.mock('./native', () => ({ native: mocks }));
 const inputEditor = () => screen.getByRole('textbox', { name: 'Input' });
 const outputEditor = () => screen.getByRole('textbox', { name: 'Output' });
 
-describe('Local Text Workbench shell', () => {
+describe('Proxima shell', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.shortcutStatus.mockResolvedValue({ available: true, shortcut: 'Ctrl+Alt+Space' });
@@ -42,6 +42,9 @@ describe('Local Text Workbench shell', () => {
 
   it('renders the three actions, dark editors, and five global controls', () => {
     render(<App />);
+    expect(screen.getByRole('heading', { name: 'Proxima' })).toBeInTheDocument();
+    expect(screen.getByText('Your local text companion.')).toBeInTheDocument();
+    expect(screen.getByText('PRIVATE · OFFLINE · INSTANT')).toBeInTheDocument();
     const action = screen.getByLabelText('Action') as HTMLSelectElement;
     expect(Array.from(action.options).map((option) => option.text)).toEqual([
       'Sanitize', 'Clean Logs', 'Sanitize + Clean',

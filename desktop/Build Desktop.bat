@@ -2,7 +2,7 @@
 setlocal
 cd /d "%~dp0"
 if not exist node_modules (
-  echo Dependencies are missing. Run "Setup Desktop.bat" first.
+  echo Proxima dependencies are missing. Run "Setup Desktop.bat" first.
   pause
   exit /b 1
 )

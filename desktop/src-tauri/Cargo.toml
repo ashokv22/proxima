@@ -1,12 +1,12 @@
 [package]
-name = "local-text-workbench"
+name = "proxima"
 version = "0.1.0"
 description = "Private, offline text sanitization and log cleanup"
-authors = ["Local Text Workbench"]
+authors = ["Proxima"]
 edition = "2021"
 
 [lib]
-name = "local_text_workbench_lib"
+name = "proxima_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

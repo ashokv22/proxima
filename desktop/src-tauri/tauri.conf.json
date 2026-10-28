@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Local Text Workbench",
+  "productName": "Proxima",
   "version": "0.1.0",
   "identifier": "com.localtextworkbench.desktop",
   "build": {
@@ -16,7 +16,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Local Text Workbench",
+        "title": "Proxima",
         "width": 1180,
         "height": 760,
         "minWidth": 820,
@@ -42,6 +42,10 @@
     "windows": {
       "webviewInstallMode": {
         "type": "downloadBootstrapper"
+      },
+      "nsis": {
+        "installerIcon": "icons/icon.ico",
+        "uninstallerIcon": "icons/icon.ico"
       }
     }
   }

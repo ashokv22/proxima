@@ -1,6 +1,6 @@
 # Local AI Insights contract
 
-Local Text Workbench talks to one fixed dependency:
+Proxima talks to one fixed dependency:
 
 - `GET http://127.0.0.1:8000/v1/models` for availability.
 - `POST http://127.0.0.1:8000/v1/chat/completions` for analysis.

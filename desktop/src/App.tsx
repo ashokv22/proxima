@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Orbit } from 'lucide-react';
 import { EditorPane } from './components/EditorPane';
 import { ClipboardIcon, CopyIcon, PlayIcon, ShieldIcon, TrashIcon } from './components/Icon';
 import { OutputPane } from './components/OutputPane';
@@ -232,11 +233,12 @@ export default function App() {
   return (
     <main className="app-shell">
       <header className="app-header">
-        <div className="brand-icon" aria-hidden="true"><ShieldIcon /></div>
+        <div className="brand-icon" aria-hidden="true"><Orbit strokeWidth={1.8} /></div>
         <div className="brand-copy">
-          <h1>Local Text Workbench</h1>
+          <h1>Proxima</h1>
           <div className="subtitle-row">
-            <span>Private · Offline · Instant</span>
+            <span className="brand-tagline">Your local text companion.</span>
+            <span className="privacy-promise">PRIVATE · OFFLINE · INSTANT</span>
             <span className="shortcut-hint">Ctrl+Alt+Space</span>
           </div>
         </div>
