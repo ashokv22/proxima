@@ -1,0 +1,23 @@
+[package]
+name = "local-text-workbench"
+version = "0.1.0"
+description = "Private, offline text sanitization and log cleanup"
+authors = ["Local Text Workbench"]
+edition = "2021"
+
+[lib]
+name = "local_text_workbench_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+indexmap = { version = "2", features = ["serde"] }
+regex = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+tauri = { version = "2.12", features = [] }
+tauri-plugin-clipboard-manager = "2"
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-single-instance = "2"

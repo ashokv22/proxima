@@ -1,0 +1,162 @@
+[
+  {
+    "name": "mandatory secrets",
+    "text": "password=\"hello world\"\nAuthorization: opaque-secret\ntoken=Bearer abc123",
+    "action": "Sanitize",
+    "globalOptions": {
+      "maskIps": false,
+      "maskEmails": false,
+      "maskPhones": false,
+      "removeThreads": false,
+      "removeLoggers": false
+    },
+    "logMetadata": {
+      "keepTimestamp": true,
+      "keepLogLevel": true,
+      "keepTraceId": true,
+      "keepUsername": true,
+      "keepPid": true
+    },
+    "expected": {
+      "text": "password=[REDACTED_SECRET]\nAuthorization: [REDACTED_SECRET]\ntoken=[REDACTED_SECRET]",
+      "changes": {
+        "authorization headers": 1,
+        "bearer tokens": 1,
+        "assigned secrets": 3
+      },
+      "warnings": [
+        "Automated redaction is best-effort. Review before sharing externally."
+      ]
+    }
+  },
+  {
+    "name": "optional masks",
+    "text": "peer=192.168.1.10 ipv6=[2001:db8::1]:443 email=a@example.com phone=9876543210",
+    "action": "Sanitize",
+    "globalOptions": {
+      "maskIps": true,
+      "maskEmails": true,
+      "maskPhones": true,
+      "removeThreads": true,
+      "removeLoggers": true
+    },
+    "logMetadata": {
+      "keepTimestamp": true,
+      "keepLogLevel": true,
+      "keepTraceId": true,
+      "keepUsername": true,
+      "keepPid": true
+    },
+    "expected": {
+      "text": "peer=[REDACTED_IP] ipv6=[REDACTED_IP]:443 email=[REDACTED_EMAIL] phone=[REDACTED_PHONE]",
+      "changes": {
+        "emails": 1,
+        "IPv6 addresses": 1,
+        "IPv4 addresses": 1,
+        "Indian phone candidates": 1
+      },
+      "warnings": [
+        "Automated redaction is best-effort. Review before sharing externally."
+      ]
+    }
+  },
+  {
+    "name": "ANSI Spring log",
+    "text": "2026-10-15 11:04:14.992 [tomcat-handler-406854] \u001b[39mDEBUG\u001b[0;39m [de48fff6-c1b9-461d-bd7c-a7704ee9ab51,anonymous] [2649128] --- \u001b[32mc.s.d.a.f.clients.dcb.IvrOtpClient\u001b[0;39m : [IvrOtpClient#searchOtp] <--- HTTP/1.1 200 OK (1808ms)",
+    "action": "Clean Logs",
+    "globalOptions": {
+      "maskIps": true,
+      "maskEmails": true,
+      "maskPhones": false,
+      "removeThreads": true,
+      "removeLoggers": true
+    },
+    "logMetadata": {
+      "keepTimestamp": true,
+      "keepLogLevel": true,
+      "keepTraceId": true,
+      "keepUsername": true,
+      "keepPid": true
+    },
+    "expected": {
+      "text": "2026-10-15 11:04:14.992 DEBUG [de48fff6-c1b9-461d-bd7c-a7704ee9ab51,anonymous] [2649128] [IvrOtpClient#searchOtp] <--- HTTP/1.1 200 OK (1808ms)",
+      "changes": {
+        "ANSI codes removed": 4,
+        "threads removed": 1,
+        "logger names removed": 1
+      },
+      "warnings": [
+        "Log cleanup uses conservative Spring-style patterns; verify uncommon formats.",
+        "Automated redaction is best-effort. Review before sharing externally."
+      ]
+    }
+  },
+  {
+    "name": "Clean Logs metadata removed",
+    "text": "2026-10-15 11:04:14.992 [tomcat-handler-406854] \u001b[39mDEBUG\u001b[0;39m [de48fff6-c1b9-461d-bd7c-a7704ee9ab51,anonymous] [2649128] --- \u001b[32mc.s.d.a.f.clients.dcb.IvrOtpClient\u001b[0;39m : [IvrOtpClient#searchOtp] <--- HTTP/1.1 200 OK (1808ms)\njava.lang.IllegalStateException: boom\n\tat com.example.Service.run(Service.java:42)",
+    "action": "Clean Logs",
+    "globalOptions": {
+      "maskIps": true,
+      "maskEmails": true,
+      "maskPhones": false,
+      "removeThreads": true,
+      "removeLoggers": true
+    },
+    "logMetadata": {
+      "keepTimestamp": false,
+      "keepLogLevel": false,
+      "keepTraceId": false,
+      "keepUsername": false,
+      "keepPid": false
+    },
+    "expected": {
+      "text": "[IvrOtpClient#searchOtp] <--- HTTP/1.1 200 OK (1808ms)\njava.lang.IllegalStateException: boom\n\tat com.example.Service.run(Service.java:42)",
+      "changes": {
+        "ANSI codes removed": 4,
+        "threads removed": 1,
+        "logger names removed": 1,
+        "trace IDs removed": 1,
+        "usernames removed": 1,
+        "PIDs removed": 1,
+        "timestamps removed": 1,
+        "log levels removed": 1
+      },
+      "warnings": [
+        "Log cleanup uses conservative Spring-style patterns; verify uncommon formats.",
+        "Automated redaction is best-effort. Review before sharing externally."
+      ]
+    }
+  },
+  {
+    "name": "combined action retains metadata defaults",
+    "text": "2026-10-15 11:04:14.992 [tomcat-handler-406854] \u001b[39mDEBUG\u001b[0;39m [de48fff6-c1b9-461d-bd7c-a7704ee9ab51,anonymous] [2649128] --- \u001b[32mc.s.d.a.f.clients.dcb.IvrOtpClient\u001b[0;39m : [IvrOtpClient#searchOtp] <--- HTTP/1.1 200 OK (1808ms) user=a@example.com",
+    "action": "Sanitize + Clean",
+    "globalOptions": {
+      "maskIps": true,
+      "maskEmails": true,
+      "maskPhones": false,
+      "removeThreads": true,
+      "removeLoggers": true
+    },
+    "logMetadata": {
+      "keepTimestamp": false,
+      "keepLogLevel": false,
+      "keepTraceId": false,
+      "keepUsername": false,
+      "keepPid": false
+    },
+    "expected": {
+      "text": "2026-10-15 11:04:14.992 DEBUG [de48fff6-c1b9-461d-bd7c-a7704ee9ab51,anonymous] [2649128] [IvrOtpClient#searchOtp] <--- HTTP/1.1 200 OK (1808ms) user=[REDACTED_EMAIL]",
+      "changes": {
+        "ANSI codes removed": 4,
+        "threads removed": 1,
+        "logger names removed": 1,
+        "emails": 1
+      },
+      "warnings": [
+        "Log cleanup uses conservative Spring-style patterns; verify uncommon formats.",
+        "Automated redaction is best-effort. Review before sharing externally."
+      ]
+    }
+  }
+]

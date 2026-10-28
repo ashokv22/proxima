@@ -1,0 +1,25 @@
+# React / Vite
+node_modules/
+dist/
+
+# Rust / Tauri
+target/
+desktop/src-tauri/gen/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Local files
+.env
+.env.*
+!.env.example
+*.log
+*.gguf
+
+# Generated installers
+*.msi
+*.msix
+*.exe
