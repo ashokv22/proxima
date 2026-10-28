@@ -1,11 +1,13 @@
-import { useMemo, useState } from 'react';
-import { buildPrettyLines } from '../prettyOutput';
+import { useEffect, useMemo, useState } from 'react';
+import { parseApiActivity, SLOW_REQUEST_MS } from '../prettyOutput';
 import type { AiAnalysis, AiViewStatus } from '../types';
 
 type OutputTab = 'text' | 'pretty' | 'ai';
+const API_PAGE_SIZE = 250;
 
 interface OutputPaneProps {
   output: string;
+  prettyEvidence?: string;
   aiStatus: AiViewStatus;
   aiInsights: string;
   aiError: string;
@@ -14,8 +16,21 @@ interface OutputPaneProps {
   onCheckStatus: () => void;
 }
 
+function formatDuration(durationMs: number | undefined): string {
+  if (durationMs === undefined) return '—';
+  if (durationMs >= 1_000) return `${(durationMs / 1_000).toFixed(durationMs >= 10_000 ? 1 : 2)} s`;
+  if (durationMs < 1) return `${Math.round(durationMs * 1_000)} µs`;
+  return `${Number.isInteger(durationMs) ? durationMs : durationMs.toFixed(1)} ms`;
+}
+
+function formatRelative(relativeMs: number | undefined): string {
+  if (relativeMs === undefined) return '';
+  return `+${formatDuration(relativeMs)}`;
+}
+
 export function OutputPane({
   output,
+  prettyEvidence,
   aiStatus,
   aiInsights,
   aiError,
@@ -24,8 +39,21 @@ export function OutputPane({
   onCheckStatus,
 }: OutputPaneProps) {
   const [tab, setTab] = useState<OutputTab>('text');
-  const prettyLines = useMemo(() => buildPrettyLines(output), [output]);
+  const [visibleApiRecords, setVisibleApiRecords] = useState(API_PAGE_SIZE);
+  const apiActivity = useMemo(
+    () => parseApiActivity(prettyEvidence ?? output, output),
+    [output, prettyEvidence],
+  );
   const analyzing = aiStatus === 'Analyzing';
+
+  useEffect(() => setVisibleApiRecords(API_PAGE_SIZE), [output]);
+
+  const loadMoreApiRecords = (element: HTMLDivElement) => {
+    const remaining = element.scrollHeight - element.scrollTop - element.clientHeight;
+    if (remaining < 240 && visibleApiRecords < apiActivity.records.length) {
+      setVisibleApiRecords((current) => Math.min(current + API_PAGE_SIZE, apiActivity.records.length));
+    }
+  };
 
   return (
     <section className="editor-panel output-panel" aria-label="Output section">
@@ -60,22 +88,130 @@ export function OutputPane({
         />
       )}
       {tab === 'pretty' && (
-        <div className="editor pretty-view" aria-label="Pretty View" role="region">
-          {prettyLines.length ? prettyLines.map((line, lineIndex) => (
-            <div className={`pretty-line pretty-line-${line.kind}`} key={lineIndex}>
-              <span className="pretty-line-number" aria-hidden="true">{lineIndex + 1}</span>
-              <code className="pretty-line-content">
-                {line.tokens.length ? line.tokens.map((token, tokenIndex) => (
-                  <span
-                    className={`pretty-token pretty-token-${token.kind}${token.level ? ` pretty-level-${token.level}` : ''}`}
-                    key={tokenIndex}
-                  >
-                    {token.text}
-                  </span>
-                )) : '\u00a0'}
-              </code>
+        <div
+          className="editor pretty-view"
+          aria-label="Pretty View"
+          role="region"
+          onScroll={(event) => loadMoreApiRecords(event.currentTarget)}
+        >
+          {apiActivity.records.length ? (
+            <>
+              <div className="api-summary" aria-label="API activity summary">
+                <div className="api-metric">
+                  <span>Completed requests</span>
+                  <strong>{apiActivity.summary.completed}</strong>
+                </div>
+                <div className={`api-metric${apiActivity.summary.failed ? ' api-metric-failed' : ''}`}>
+                  <span>Failed requests</span>
+                  <strong>{apiActivity.summary.failed}</strong>
+                </div>
+                <div className="api-metric">
+                  <span>Slowest response</span>
+                  <strong>{formatDuration(apiActivity.summary.slowestMs)}</strong>
+                </div>
+              </div>
+              <div className="api-list" role="list" aria-label="API activity">
+                {apiActivity.records.slice(0, visibleApiRecords).map((record) => {
+                  const failed = record.status !== undefined && record.status >= 400;
+                  const slow = record.durationMs !== undefined && record.durationMs >= SLOW_REQUEST_MS;
+                  const statusClass = record.status === undefined
+                    ? 'unknown'
+                    : record.status >= 500
+                      ? 'server-error'
+                      : record.status >= 400
+                        ? 'client-error'
+                        : record.status >= 200
+                          ? 'success'
+                          : 'neutral';
+                  const timestamp = record.timestamp;
+                  return (
+                    <details
+                      className={`api-record${failed ? ' api-record-failed' : ''}${slow ? ' api-record-slow' : ''}`}
+                      key={record.id}
+                      role="listitem"
+                    >
+                      <summary>
+                        <span className="api-card-primary">
+                          <span className={`api-status api-status-${statusClass}`}>
+                            {record.status ?? (record.state === 'started' ? 'Pending' : '—')}
+                          </span>
+                          <span className={`api-method api-method-${record.method?.toLowerCase() ?? 'unknown'}`}>
+                            {record.method ?? '—'}
+                          </span>
+                          <span className="api-duration">{formatDuration(record.durationMs)}</span>
+                        </span>
+                        <span className="api-uri">{record.uri ?? 'URI unavailable'}</span>
+                        <span className="api-card-footer">
+                          <span className="api-timestamp">{timestamp ?? '—'}</span>
+                          <span className="api-log-count">
+                            {record.internalLogCount} {record.internalLogCount === 1 ? 'internal log' : 'internal logs'}
+                          </span>
+                          <span className="api-chevron" aria-hidden="true" />
+                        </span>
+                      </summary>
+                      <div className="api-record-details">
+                        <dl className="api-request-metadata">
+                          {record.uri && <div><dt>Full URI</dt><dd><code>{record.uri}</code></dd></div>}
+                          {record.method && <div><dt>HTTP method</dt><dd>{record.method}</dd></div>}
+                          {record.status !== undefined && <div><dt>Status</dt><dd>{record.status}</dd></div>}
+                          {record.durationMs !== undefined && <div><dt>Duration</dt><dd>{formatDuration(record.durationMs)}</dd></div>}
+                          {timestamp && <div><dt>Start timestamp</dt><dd>{timestamp}</dd></div>}
+                          {record.completedTimestamp && <div><dt>End timestamp</dt><dd>{record.completedTimestamp}</dd></div>}
+                          {record.correlationId && <div><dt>Correlation ID</dt><dd><code>{record.correlationId}</code></dd></div>}
+                        </dl>
+                        <ol className="api-timeline" aria-label="Request activity">
+                          {record.details.map((detail) => (
+                            <li
+                              className={`api-timeline-entry api-timeline-${detail.kind}${detail.level ? ` api-level-${detail.level.toLowerCase()}` : ''}`}
+                              key={`${detail.line}-${detail.kind}`}
+                            >
+                              <span className="api-timeline-meta">
+                                <span>{detail.kind === 'start' ? 'Request start' : detail.kind === 'end' ? 'Request end' : detail.kind === 'stack' ? 'Stack trace' : detail.level ?? 'Log'}</span>
+                                <span className="api-timeline-times">
+                                  {detail.timestamp && <time>{detail.timestamp}</time>}
+                                  {detail.relativeMs !== undefined && <time>{formatRelative(detail.relativeMs)}</time>}
+                                </span>
+                              </span>
+                              <code>{detail.text}</code>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    </details>
+                  );
+                })}
+                {visibleApiRecords < apiActivity.records.length && (
+                  <div className="api-more" aria-live="polite">
+                    Showing {visibleApiRecords.toLocaleString()} of {apiActivity.records.length.toLocaleString()} · Scroll for more
+                  </div>
+                )}
+                {apiActivity.unassignedLogs.length > 0 && (
+                  <details className="api-unassigned">
+                    <summary>
+                      <span>Unassigned Logs</span>
+                      <span>{apiActivity.unassignedLogs.length}</span>
+                    </summary>
+                    <ol className="api-timeline" aria-label="Unassigned logs">
+                      {apiActivity.unassignedLogs.map((detail) => (
+                        <li
+                          className={`api-timeline-entry api-timeline-${detail.kind}${detail.level ? ` api-level-${detail.level.toLowerCase()}` : ''}`}
+                          key={`${detail.line}-${detail.kind}`}
+                        >
+                          <span className="api-timeline-meta"><span>{detail.level ?? 'Log'}</span></span>
+                          <code>{detail.text}</code>
+                        </li>
+                      ))}
+                    </ol>
+                  </details>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="pretty-empty">
+              <strong>No supported API activity found</strong>
+              <span>Pretty View recognizes cleaned REQ START and REQ END records. The complete output remains available in Text.</span>
             </div>
-          )) : <span className="empty-view">Processed text appears here</span>}
+          )}
         </div>
       )}
       {tab === 'ai' && (

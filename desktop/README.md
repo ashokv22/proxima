@@ -44,3 +44,9 @@ The server contract and safe error codes are documented in [`docs/ai-insights-co
 - `src-tauri/`: native lifecycle, shortcut, single-instance behavior, Rust processing, and the fixed-loopback llama.cpp client.
 - Clean Logs metadata preferences contain only booleans and are stored in WebView local storage.
 - Input, output, clipboard contents, and processing results are never persisted by the application.
+
+## Pretty View
+
+Pretty View is a read-only API activity projection over the sanitized output. It recognizes `REQ START` and `REQ END` records, pairs them only when a reliable request/trace/correlation identifier is present, and uses `REQ END` status and duration values without deriving missing data. Text remains the exact copy source.
+
+Local Text Workbench v0.1 is feature-frozen after this Pretty View implementation. Further work should be limited to defects, security fixes, and packaging maintenance.

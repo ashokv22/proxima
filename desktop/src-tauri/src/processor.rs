@@ -145,6 +145,8 @@ pub struct ProcessResult {
     pub text: String,
     pub changes: IndexMap<String, usize>,
     pub warnings: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pretty_evidence: Option<String>,
 }
 
 impl ProcessResult {
@@ -153,6 +155,7 @@ impl ProcessResult {
             text,
             changes: IndexMap::new(),
             warnings: Vec::new(),
+            pretty_evidence: None,
         }
     }
 }
@@ -401,6 +404,7 @@ pub fn sanitize(text: &str, mask_ips: bool, mask_emails: bool, mask_phones: bool
         text: output,
         changes,
         warnings: vec![SANITIZE_WARNING.to_owned()],
+        pretty_evidence: None,
     }
 }
 
@@ -568,12 +572,29 @@ pub fn clean_logs(
         text: cleaned,
         changes,
         warnings: vec![CLEAN_WARNING.to_owned()],
+        pretty_evidence: None,
     }
 }
 
 pub fn process(request: ProcessRequest) -> Result<ProcessResult, &'static str> {
+    // Pretty View needs correlation fields that Clean Logs may intentionally hide.
+    // Keep only an in-memory, fully sanitized copy and only for request activity logs.
+    let has_request_activity = request.text.split('\n').any(|line| {
+        let upper = line.to_ascii_uppercase();
+        upper.contains("REQ START") || upper.contains("REQ END")
+    });
+    let pretty_evidence = has_request_activity.then(|| {
+        let protected = sanitize(
+            &request.text,
+            request.global_options.mask_ips,
+            request.global_options.mask_emails,
+            request.global_options.mask_phones,
+        );
+        ANSI_SGR.replace_all(&protected.text, "").into_owned()
+    });
+
     let mut transformed = match request.action.as_str() {
-        "Sanitize" => ProcessResult::unchanged(request.text),
+        "Sanitize" => ProcessResult::unchanged(request.text.clone()),
         "Clean Logs" => clean_logs(
             &request.text,
             request.global_options.remove_threads,
@@ -600,6 +621,7 @@ pub fn process(request: ProcessRequest) -> Result<ProcessResult, &'static str> {
     }
     transformed.text = protected.text;
     transformed.warnings.extend(protected.warnings);
+    transformed.pretty_evidence = pretty_evidence;
     Ok(transformed)
 }
 
@@ -796,6 +818,37 @@ mod tests {
     }
 
     #[test]
+    fn pretty_evidence_retains_only_sanitized_correlation_metadata() {
+        let trace = "de48fff6-c1b9-461d-bd7c-a7704ee9ab51";
+        let source = [
+            format!("2026-10-28 13:00:00.000 [http-nio-8080-exec-4] INFO [{trace},alice] [701] --- com.proxima.RequestLogger : REQ START GET /users/a@example.com"),
+            format!("2026-10-28 13:00:00.010 [http-nio-8080-exec-4] INFO [{trace},alice] [701] --- com.proxima.CustomerService : password=hunter2 email=a@example.com"),
+            format!("2026-10-28 13:00:00.020 [http-nio-8080-exec-4] INFO [{trace},alice] [701] --- com.proxima.RequestLogger : REQ END status=200 duration=20ms"),
+        ]
+        .join("\n");
+        let mut request = request(&source, "Clean Logs");
+        request.log_metadata = LogMetadataOptions {
+            keep_timestamp: false,
+            keep_log_level: false,
+            keep_trace_id: false,
+            keep_username: false,
+            keep_pid: false,
+        };
+        request.global_options = globals(false, true, false);
+
+        let result = process(request).unwrap();
+        let evidence = result.pretty_evidence.expect("request logs need Pretty evidence");
+        assert!(evidence.contains(trace));
+        assert!(evidence.contains("http-nio-8080-exec-4"));
+        assert!(evidence.contains("[REDACTED_EMAIL]"));
+        assert!(evidence.contains("password=[REDACTED_SECRET]"));
+        assert!(!evidence.contains("a@example.com"));
+        assert!(!evidence.contains("hunter2"));
+        assert!(!result.text.contains(trace));
+        assert!(!result.text.contains("http-nio-8080-exec-4"));
+    }
+
+    #[test]
     fn all_optional_mask_combinations_apply_independently() {
         for action in ["Sanitize", "Clean Logs", "Sanitize + Clean"] {
             for bits in 0_u8..8 {
@@ -873,7 +926,9 @@ mod tests {
                 log_metadata: case.log_metadata,
             })
             .unwrap();
-            assert_eq!(actual, case.expected, "case={}", case.name);
+            assert_eq!(actual.text, case.expected.text, "case={}", case.name);
+            assert_eq!(actual.changes, case.expected.changes, "case={}", case.name);
+            assert_eq!(actual.warnings, case.expected.warnings, "case={}", case.name);
         }
     }
 }

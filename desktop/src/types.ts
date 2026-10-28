@@ -27,6 +27,8 @@ export interface ProcessResult {
   text: string;
   changes: Record<string, number>;
   warnings: string[];
+  /** Sanitized, in-memory-only evidence retaining fields needed by Pretty View. */
+  prettyEvidence?: string;
 }
 
 export interface ShortcutStatus {

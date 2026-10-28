@@ -312,6 +312,7 @@ export default function App() {
         />
         <OutputPane
           output={output}
+          prettyEvidence={result?.prettyEvidence}
           aiStatus={aiStatus}
           aiInsights={aiInsights}
           aiError={aiError}
